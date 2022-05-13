@@ -107,8 +107,10 @@ describe("Asteroid Protocol", function () {
     topic_ratios = [],
     ratios = [1, 2, 3],
     recipients = [a(p2), a(p3), a(p4)],
-    uint = Math.floor(Math.random() * 19) * 100 + 50
+    uint = Math.floor(Math.random() * 19) * 100 + 50,
+    update = false
   ) => {
+    console.log(update)
     const message = {
       id: _id,
     }
@@ -154,7 +156,7 @@ describe("Asteroid Protocol", function () {
     const signature2 = ethSigUtil.signTypedMessage(wallet.getPrivateKey(), {
       data: data2,
     })
-    await asteroid.mint(
+    await asteroid[update ? "update" : "mint"](
       [_id, tx],
       [signature, signature2],
       [nonce, uint],
@@ -164,7 +166,7 @@ describe("Asteroid Protocol", function () {
     )
   }
 
-  const addTopic = async (wallet, _id, nonce, tx) => {
+  const addTopic = async (wallet, _id, nonce, tx, update = false) => {
     const message = {
       id: _id,
     }
@@ -215,7 +217,7 @@ describe("Asteroid Protocol", function () {
     const signature2 = ethSigUtil.signTypedMessage(wallet.getPrivateKey(), {
       data: data2,
     })
-    await topic.mintTopic(
+    await topic[update ? "updateTopic" : "mintTopic"](
       [_id, tx],
       [signature, signature2],
       [nonce, uint],
@@ -445,7 +447,31 @@ describe("Asteroid Protocol", function () {
         `https://arweave.net/${tx}`
       )
       await tip.tip(_id, "test", { value: to18("0.1") })
-
+      stats.push({ id: _id, provider: _pwallet })
+      i++
+    }
+  })
+  it.only("Should update topics", async function () {
+    await season.add_season_spans(10, 2)
+    let i = 0
+    let stats = []
+    while (i < 10) {
+      const wallet = Wallet.generate()
+      const _pwallet = new ethers.Wallet(wallet.privateKey, anEthersProvider)
+      const _id = nanoid(9)
+      const nonce = i + 1
+      const tx = nanoid(40)
+      await p.sendTransaction({
+        to: wallet.getAddressString(),
+        value: to18("1"),
+      })
+      await addTopic(wallet, _id, nonce, tx)
+      expect(await topics.tokenURI(i + 1)).to.equal(`https://arweave.net/${tx}`)
+      const tx2 = nanoid(40)
+      await addTopic(wallet, _id, nonce + 1, tx2, true)
+      expect(await topics.tokenURI(i + 1)).to.equal(
+        `https://arweave.net/${tx2}`
+      )
       stats.push({ id: _id, provider: _pwallet })
       i++
     }

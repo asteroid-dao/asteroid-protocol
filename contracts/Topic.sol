@@ -36,7 +36,7 @@ contract Topic is Ownable, Envoy {
     bytes32 long_id = keccak256(_signatures[0]);
     address to = ECDSA.recover(t().hashTypedDataV4(keccak256(abi.encode(keccak256("NFT(bytes signature,string arweave_tx,uint256 nonce,bytes32 extra)"), long_id, keccak256(bytes(_ids[1])), _uints[0], _extra))), _signatures[1]);
     setTopicNonce(_ids[0], _uints[0]);
-    require(p().ids(_ids[0]) == 0, "id already exists");
+    require(p().topic_ids(_ids[0]) == 0, "id already exists");
     require(ECDSA.recover(t().hashTypedDataV4(keccak256(abi.encode(keccak256("Topic(string id)"), keccak256(bytes(_ids[0]))))), _signatures[0]) == to, "author is not signer");
     uint tokenId = t().mint(to, _ids[1]);
     setTopicId(_ids[0], tokenId);
@@ -51,8 +51,8 @@ contract Topic is Ownable, Envoy {
     require(p().topic_nonces(_ids[0]) < _uints[0], "nonce must be greater");
     bytes32 long_id = keccak256(_signatures[0]);
     setTopicNonce(_ids[0], _uints[0]);
-    require(p().ids(_ids[0]) != 0, "id doesn't exist");
-    uint tokenId = p().ids(_ids[0]);
+    require(p().topic_ids(_ids[0]) != 0, "id doesn't exist");
+    uint tokenId = p().topic_ids(_ids[0]);
     address token_contract = p().topic_contracts(_ids[0]);
     address to = IASTERO721(token_contract).ownerOf(tokenId);
     require(ECDSA.recover(t().hashTypedDataV4(keccak256(abi.encode(keccak256("NFT(bytes signature,string arweave_tx,uint256 nonce,bytes32 extra)"), long_id, keccak256(bytes(_ids[1])), _uints[0], _extra))), _signatures[1]) == to, "author is not signer");
