@@ -106,5 +106,4 @@ contract Asteroid is Ownable, Envoy {
     }
     _update(p().token(), tokenId, _uints[1], _recipients, _extra_uints, _ids, to);
   }
-
 }

@@ -51,16 +51,9 @@ contract Tip is Ownable, Envoy {
     return s().getUint(abi.encode("total_reward_vp", _season));
   }
   
-  function emitTip(uint amount, uint tx_fee, string memory id, string memory ref) internal {
-    address to = IASTERO721(p().contracts(id)).ownerOf(p().ids(id));
-    uint[] memory _topics = new uint[](1);
-    _topics[0] = 0;
-    uint[] memory _amounts = new uint[](1);
-    _amounts[0] = tx_fee;
-    address[] memory _tos = new address[](1);
-    _tos[0] = to;
-    uint[] memory _to_amounts = new uint[](1);
-    _to_amounts[0] = amount;
+  function emitTip(uint amount, uint tx_fee, string memory id, string memory ref, address[] memory _tos, uint[] memory _to_amounts, uint[] memory _topics, uint[] memory _amounts) internal {
+    //uint[] memory _amounts = new uint[](1);
+    //_amounts[0] = tx_fee;
     e().tip(msg.sender, [address(0), address(0)], amount, _tos, _to_amounts, tx_fee, id, ref, _topics, _amounts, ss().season());
   }
 
@@ -113,8 +106,10 @@ contract Tip is Ownable, Envoy {
     uint[] memory vps = new uint[](recipients.length);
     u[5] = msg.value - u[1];
     u[6] = sum(tip_ratios);
+    uint[] memory _amounts = new uint[](u[2] == 0 ? 1 : _topics.length);
     if(u[2] == 0){
       (u[4], toValid, u[11], _valid) = _checkTopic(id, [0, 1, 1, u[1], u[3]], true);
+      _amounts[0] = u[4];
       if(_valid){
 	uint[] memory _tvps = _split(tip_ratios, u[6], u[4] + (toValid ? u[11] : 0));
 	for(uint i2; i2 < _tvps.length; i2++) vps[i2] += _tvps[i2];
@@ -123,6 +118,7 @@ contract Tip is Ownable, Envoy {
       for(uint i = 0;i < _topics.length; i++){
 	require(IASTERO721(p().topic()).ownerOf(_topics[i]) != address(0), "topic doesn't exist");
 	(u[4], toValid, u[11], _valid) = _checkTopic(id, [_topics[i], _topic_ratios[i], u[2], u[1], u[3]], i == _topics.length - 1);
+	_amounts[i] = u[4];
 	u[3] += u[4];
 	if(_valid){
 	  uint[] memory _tvps = _split(tip_ratios, u[6], u[4] + (toValid ? u[11] : 0));
@@ -132,10 +128,12 @@ contract Tip is Ownable, Envoy {
     }
     
     s().setUint(abi.encode("avp", id), avp(id) + u[1]);
+    uint[] memory _to_amounts = new uint[](recipients.length);
     for(uint i; i < recipients.length; i++){
       require(msg.sender != recipients[i], "you cannot tip yourself");
       uint _sent = i == recipients.length - 1 ? (u[5] - u[7]) : u[5] * tip_ratios[i] / u[6];
       uint _vp = i == recipients.length - 1 ? (u[1] - u[8]) : u[1] * tip_ratios[i] / u[6];
+      _to_amounts[i] = _vp;
       u[7] += _sent;
       u[8] += _vp;
       s().setUint(abi.encode("ivp", msg.sender), ivp(msg.sender) + _vp);
@@ -154,6 +152,6 @@ contract Tip is Ownable, Envoy {
       s().setUint(abi.encode("total_reward_vp", u[9]), total_reward_vp(u[9]) + u[10]);	
     }
     
-    emitTip(msg.value, u[1], id, ref);
+    emitTip(msg.value, u[0], id, ref, recipients, _to_amounts, _topics, _amounts);
   }
 }

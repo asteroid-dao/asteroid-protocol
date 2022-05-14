@@ -1,7 +1,7 @@
 const { expect } = require("chai")
 const B = require("big.js")
 const { ethers } = require("hardhat")
-const { splitEvery } = require("ramda")
+const { map, splitEvery } = require("ramda")
 const { nanoid } = require("nanoid")
 const {
   from18,
@@ -98,6 +98,7 @@ describe("Asteroid Protocol", function () {
     await parameters.setMinAmount(to18("0.1"))
     await season.setGenesis(3)
   })
+
   const addItem = async (
     wallet,
     _id,
@@ -110,7 +111,6 @@ describe("Asteroid Protocol", function () {
     uint = Math.floor(Math.random() * 19) * 100 + 50,
     update = false
   ) => {
-    console.log(update)
     const message = {
       id: _id,
     }
@@ -295,15 +295,18 @@ describe("Asteroid Protocol", function () {
     expect(from18(await tip.tavp(2, 0, _id)) * 1).to.equal(2)
   })
 
-  it("Should split tip with topics", async function () {
+  it.only("Should split tip with topics", async function () {
     await season.add_season_spans(100, 2)
     const wallet = Wallet.generate()
     const _pwallet = new ethers.Wallet(wallet.privateKey, anEthersProvider)
     const _id = nanoid(9)
     const nonce = 1
     const tx = nanoid(40)
+    const tx2 = nanoid(40)
     await addTopic(wallet, "one", 1, tx)
     await addTopic(wallet, "two", 2, tx)
+    await addTopic(wallet, "three", 3, tx)
+    await addTopic(wallet, "four", 4, tx)
     await addItem(
       wallet,
       _id,
@@ -315,8 +318,22 @@ describe("Asteroid Protocol", function () {
       [a(p2), a(p3), a(p4)],
       1000
     )
+    const _id2 = nanoid(9)
+    await addItem(
+      wallet,
+      _id2,
+      nonce,
+      tx2,
+      [1, 2, 3, 4],
+      [1, 2, 3, 4],
+      [1, 3, 6],
+      [a(p2), a(p3), a(p4)],
+      1000
+    )
     await parameters.setDefaultMinTip(to18("0.3"))
-    await tip.tip(_id, "test", { value: to18("10") })
+    let tip1 = await tip.tip(_id, "test", { value: to18("10") })
+    const filter = events.filters.Tip(null)
+
     expect(from18(await tip.reward_vp(2, a(p2))) * 1).to.equal(0.075)
     expect(from18(await tip.reward_vp(2, a(p3))) * 1).to.equal(0.225)
     expect(from18(await tip.reward_vp(2, a(p4))) * 1).to.equal(0.45)
@@ -324,7 +341,8 @@ describe("Asteroid Protocol", function () {
     expect(from18(await tip.avp(_id)) * 1).to.equal(1)
     expect(from18(await tip.tavp(2, 1, _id)) * 1).to.equal(0.25)
     expect(from18(await tip.tavp(2, 2, _id)) * 1).to.equal(0.75)
-    await tip.tip(_id, "test", { value: to18("10") })
+
+    let tip2 = await tip.tip(_id, "test", { value: to18("10") })
     expect(from18(await tip.reward_vp(2, a(p2))) * 1).to.equal(0.2)
     expect(from18(await tip.reward_vp(2, a(p3))) * 1).to.equal(0.6)
     expect(from18(await tip.reward_vp(2, a(p4))) * 1).to.equal(1.2)
@@ -332,6 +350,30 @@ describe("Asteroid Protocol", function () {
     expect(from18(await tip.avp(_id)) * 1).to.equal(2)
     expect(from18(await tip.tavp(2, 1, _id)) * 1).to.equal(0.5)
     expect(from18(await tip.tavp(2, 2, _id)) * 1).to.equal(1.5)
+
+    let tip3 = await tip.tip(_id2, "test", { value: to18("10") })
+    const _events = await events.queryFilter(filter, 0)
+    const _b = n => B(n).toFixed() * 1
+    for (let v of _events) {
+      const _data = {
+        block: v.blockNumber,
+        tx: v.transactionHash,
+        index: v.transactionIndex,
+        from: v.args.from,
+        tokens: v.args.tokens,
+        from_amount: _b(v.args.from_amount),
+        to: v.args.to,
+        to_amounts: map(_b)(v.args.to_amounts),
+        payback: _b(v.args.payback),
+        id: v.args.id,
+        ref: v.args.ref,
+        topics: map(_b)(v.args.topics),
+        topic_amounts: map(_b)(v.args.topic_amounts),
+        season: _b(v.args.season),
+        checked: false,
+      }
+      console.log(_data)
+    }
   })
 
   it("Should manage treasury", async function () {
@@ -451,7 +493,7 @@ describe("Asteroid Protocol", function () {
       i++
     }
   })
-  it.only("Should update topics", async function () {
+  it("Should update topics", async function () {
     await season.add_season_spans(10, 2)
     let i = 0
     let stats = []
