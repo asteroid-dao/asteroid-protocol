@@ -60,6 +60,9 @@ contract Topic is Ownable, Envoy {
     setTopicContract(_ids[0], p().topic());
     setTopicShortId(long_id, _ids[0]);
     setTopicLongId(tokenId, long_id);
+    if(keccak256(abi.encodePacked(IASTERO721(token_contract).tokenURI(tokenId))) != keccak256(abi.encodePacked("ar://", _ids[1]))){
+      IASTERO721(token_contract).setTokenURI(tokenId, _ids[1]);
+    }
     e().updateTopic(_ids[0], p().topic(), tokenId, _ids[1], to, 0);
   }
   
