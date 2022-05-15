@@ -47,7 +47,8 @@ describe("Asteroid Protocol", function () {
     season,
     safe,
     events,
-    parameters
+    parameters,
+    tavp
 
   beforeEach(async () => {
     ;[p, p2, p3, p4, p5] = await ethers.getSigners()
@@ -63,6 +64,7 @@ describe("Asteroid Protocol", function () {
     treasury = await deploy("Treasury", a(registry))
     safe = await deploy("Safe")
     events = await deploy("Events")
+    tavp = await deploy("TAVP", a(registry))
 
     chainId = (await parameters.getChainId()).toNumber()
     await events.grantRole(await events.EMITTER_ROLE(), a(asteroid))
@@ -295,7 +297,7 @@ describe("Asteroid Protocol", function () {
     expect(from18(await tip.tavp(2, 0, _id)) * 1).to.equal(2)
   })
 
-  it.only("Should split tip with topics", async function () {
+  it("Should split tip with topics", async function () {
     await season.add_season_spans(100, 2)
     const wallet = Wallet.generate()
     const _pwallet = new ethers.Wallet(wallet.privateKey, anEthersProvider)
