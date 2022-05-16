@@ -52,7 +52,15 @@ contract Tip is Ownable, Envoy {
   }
   
   function emitTip(uint amount, uint tx_fee, string memory id, string memory ref, address[] memory _tos, uint[] memory _to_amounts, uint[] memory _topics, uint[] memory _amounts) internal {
-    e().tip(msg.sender, [address(0), address(0)], amount, _tos, _to_amounts, tx_fee, id, ref, _topics, _amounts, ss().season());
+    uint[] memory topics = new uint[](_topics.length == 0 ? 1 : _topics.length);
+    if(topics.length == 0){
+      topics[0] = 0;
+    }else{
+      for(uint i = 0;i < _topics.length;i++){
+	topics[i] = _topics[i];
+      }
+    }
+    e().tip(msg.sender, [address(0), address(0)], amount, _tos, _to_amounts, tx_fee, id, ref, topics, _amounts, ss().season());
   }
 
   // u = [0: _topic, 1: _ratio, 2: _sum, 3: tx_fee, 4: _tvp]
