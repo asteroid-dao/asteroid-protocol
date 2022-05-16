@@ -150,6 +150,6 @@ contract Tip is Ownable, Envoy {
       s().setUint(abi.encode("total_reward_vp", u[9]), total_reward_vp(u[9]) + u[10]);	
     }
     
-    emitTip(msg.value, u[0], id, ref, recipients, _to_amounts, _topics, _amounts);
+    emitTip(msg.value, u[1], id, ref, recipients, _to_amounts, _topics, _amounts);
   }
 }
