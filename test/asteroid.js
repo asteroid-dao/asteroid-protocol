@@ -374,7 +374,6 @@ describe("Asteroid Protocol", function () {
         season: _b(v.args.season),
         checked: false,
       }
-      console.log(_data)
     }
   })
 

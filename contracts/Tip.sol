@@ -139,7 +139,7 @@ contract Tip is Ownable, Envoy {
       require(msg.sender != recipients[i], "you cannot tip yourself");
       uint _sent = i == recipients.length - 1 ? (u[5] - u[7]) : u[5] * tip_ratios[i] / u[6];
       uint _vp = i == recipients.length - 1 ? (u[1] - u[8]) : u[1] * tip_ratios[i] / u[6];
-      _to_amounts[i] = _vp;
+      _to_amounts[i] = _sent;
       u[7] += _sent;
       u[8] += _vp;
       s().setUint(abi.encode("ivp", msg.sender), ivp(msg.sender) + _vp);
