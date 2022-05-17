@@ -48,10 +48,14 @@ describe("Asteroid Protocol", function () {
     safe,
     events,
     parameters,
-    tavp
+    tavp,
+    roid,
+    token
 
   beforeEach(async () => {
     ;[p, p2, p3, p4, p5] = await ethers.getSigners()
+    roid = await deploy("ROID", to18(1000000000))
+    token = await deploy("ROID", to18(1000000000))
     storage = await deploy("Storage")
     registry = await deploy("Registry", a(storage), "addresses")
     parameters = await deploy("Parameters", a(registry))
@@ -380,9 +384,15 @@ describe("Asteroid Protocol", function () {
   it("Should manage treasury", async function () {
     await season.add_season_spans(100, 2)
     await treasury.addReward(1, { value: to18(1) })
+    await roid.approve(a(treasury), to18(1000000000))
     expect(from18(await treasury.reward(1)) * 1).to.equal(1)
+    await token.approve(a(treasury), to18(1000000000))
     await treasury.addReward(2, { value: to18(2) })
+    await treasury.addRewardERC20(2, a(roid), to18(100000))
+    await treasury.addRewardERC20(2, a(token), to18(50000))
     expect(from18(await treasury.reward(2)) * 1).to.equal(2)
+    expect(from18(await roid.balanceOf(a(safe))) * 1).to.equal(100000)
+    expect(await treasury.getSeasonRewardTokens(2)).to.eql([a(roid), a(token)])
     let i = 0
     while (i < 10) {
       const wallet = Wallet.generate()
@@ -411,8 +421,14 @@ describe("Asteroid Protocol", function () {
       i++
     }
     const before = from18(await anEthersProvider.getBalance(a(p2)))
-    expect(from18(await treasury.connect(p2).getReward(2)) * 1).to.equal(1 / 3)
     await treasury.connect(p2).withdraw(2)
+    expect(
+      Math.round(
+        B(await roid.balanceOf(a(p2)))
+          .div(10 ** 18)
+          .toFixed()
+      )
+    ).to.equal(16667)
     const after = from18(await anEthersProvider.getBalance(a(p2)))
     expect(Math.round((after * 1 - before * 1) * 100)).to.equal(33)
     await isErr(treasury.connect(p2).withdraw(2))
